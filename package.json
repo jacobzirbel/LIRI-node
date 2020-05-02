@@ -1,0 +1,25 @@
+{
+  "name": "liri-node",
+  "version": "1.0.0",
+  "description": "CLI to get info on music and movies",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jacobzirbel/LIRI-node.git"
+  },
+  "author": "Jacob Zirbel",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jacobzirbel/LIRI-node/issues"
+  },
+  "homepage": "https://github.com/jacobzirbel/LIRI-node#readme",
+  "dependencies": {
+    "axios": "^0.19.2",
+    "dotenv": "^8.2.0",
+    "moment": "^2.25.1",
+    "node-spotify-api": "^1.1.1"
+  }
+}
