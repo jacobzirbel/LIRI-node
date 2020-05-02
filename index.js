@@ -27,3 +27,17 @@ function showEvent(event) {
 	console.log(result);
 	console.log(separator);
 }
+
+function spotifySearch(query) {
+	spotify.search({ type: "track", query: query, limit: 2 }, (err, data) => {
+		if (err) return console.log("error");
+		showSong(data.tracks.items[0]);
+	});
+}
+
+function showSong(song) {
+	let result = `Artists: ${JSON.stringify(song.artists[0].name)}\nSong Name: ${
+		song.name
+	}\nSpotify URL: ${song.external_urls.spotify}\nAlbum: ${song.album.name}`;
+	console.log(result);
+}
