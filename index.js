@@ -9,7 +9,7 @@ const spotify = new Spotify({
 	id: keys.spotify.id,
 	secret: keys.spotify.secret,
 });
-const separator = "------------";
+const separator = "\n------------\n";
 
 inquirer
 	.prompt([
@@ -30,63 +30,142 @@ inquirer
 			when: (answers) => answers.task !== 4,
 		},
 	])
-	.then((response) => {
+	.then(async (response) => {
 		if (response.task === 4) {
-			// txt file commands
+			txtCommands();
 		} else {
+			let res;
 			switch (response.task) {
 				case 1:
-					axiosGetEvents(response.query);
+					res = await axiosGetEvents(response.query);
+					console.log(res);
 					break;
 				case 2:
-					spotifySearch(response.query);
+					res = await spotifySearch(response.query);
+					console.log(res);
 					break;
 				case 3:
-					axiosSearchMovie(response.query);
+					res = await axiosSearchMovie(response.query);
+					console.log(res);
 					break;
 			}
 		}
 	});
 
+async function txtCommands() {
+	let input = extractInput();
+	let outputData = "";
+	promises = [];
+	input.commands.forEach((line) => {
+		line = line.split(" ");
+		let command = line.shift();
+		let query = line.join(" ");
+
+		if (command.includes("spotify")) {
+			promises.push(spotifySearch(query));
+			// output += showSong(res);
+		} else if (command.includes("concert")) {
+			promises.push(axiosGetEvents(query));
+			// output += showEvents(res);
+		} else if (command.includes("movie")) {
+			promises.push(axiosSearchMovie(query));
+			// output += showMovieInfo(res);
+		}
+	});
+	console.log(promises.length);
+	Promise.all(promises).then((values) => {
+		console.log(values);
+		values.forEach((e) => {
+			console.log(e);
+			outputData += e;
+		});
+		writeOutput(outputData, input.outputFile);
+	});
+}
+function writeOutput(outputData, outputFile) {
+	fs.writeFileSync(outputFile, outputData);
+}
+function extractInput() {
+	let input = fs.readFileSync("input.txt", "utf8");
+	let outputRE = new RegExp(/\w*OUTPUT\sLOCATION*\w:(.*)\.txt/i);
+	let output = "output.txt";
+	let commands = [];
+	let nonsense = [];
+	input.split("\n").forEach((line) => {
+		if (!line.includes("#")) {
+			if (
+				line.includes("spotify") ||
+				line.includes("concert") ||
+				line.includes("movie")
+			) {
+				commands.push(line);
+			} else if (line.includes("OUTPUT")) {
+				output = line.match(outputRE)[1].trim() + ".txt";
+			} else {
+				nonsense.push(line);
+			}
+		}
+	});
+	return { commands: commands, nonsense: nonsense, outputFile: output };
+}
 function axiosGetEvents(artist) {
 	let url = `https://rest.bandsintown.com/artists/${artist}/events?app_id=${keys.bandsInTown.secret}`;
-	axios.get(url).then(eventCallback).catch(errorFn);
-	function eventCallback(response) {
-		response.data.forEach((e) => showEvent(e));
-	}
+	return new Promise((resolve, reject) => {
+		axios
+			.get(url)
+			.then((response) => resolve(showEvents(response)))
+			.catch(errorFn);
+	});
+}
+
+function showEvents(response) {
+	let info = "";
+	response.data.forEach((e) => {
+		info += showEvent(e);
+	});
+	return info;
 }
 
 function showEvent(event) {
-	let result = `Venue: ${event.venue.name}\nLocation: ${
+	let info = `${separator}Venue: ${event.venue.name}\nLocation: ${
 		event.venue.location
-	}\nDate of Event: ${moment(event.datetime)}\n`;
-	console.log(result);
-	console.log(separator);
+	}\nDate of Event: ${moment(event.datetime)}${separator}`;
+	return info;
 }
 
-function spotifySearch(query) {
-	spotify.search({ type: "track", query: query, limit: 2 }, (err, data) => {
-		if (err) return console.log("error");
-		showSong(data.tracks.items[0]);
+async function spotifySearch(query, callback) {
+	return new Promise((resolve, reject) => {
+		spotify.search({ type: "track", query: query, limit: 2 }, (err, data) => {
+			if (err) reject(err);
+			resolve(showSong(data.tracks.items[0]));
+		});
 	});
 }
 
 function showSong(song) {
-	let result = `Artists: ${JSON.stringify(song.artists[0].name)}\nSong Name: ${
-		song.name
-	}\nSpotify URL: ${song.external_urls.spotify}\nAlbum: ${song.album.name}`;
-	console.log(result);
-}
-function axiosSearchMovie(query) {
-	let url = `http://www.omdbapi.com/?t=${query}&y=&plot=short&apikey=${keys.ombd.secret}`;
-	axios.get(url).then(movieCallback).catch(errorFn);
-	function movieCallback(response) {
-		console.log(
-			`Title: ${response.data.Title}\nYear: ${response.data.Year}\nIMDB Rating: ${response.data.imdbRating}\nCountry: ${response.data.Country}\nLanguage: ${response.data.Language}\nPlot: ${response.data.Plot}\nActors: ${response.data.Actors}\n`
-		);
-	}
+	let info = `${separator}Artists: ${JSON.stringify(
+		song.artists[0].name
+	)}\nSong Name: ${song.name}\nSpotify URL: ${
+		song.external_urls.spotify
+	}\nAlbum: ${song.album.name}${separator}`;
+	return info;
 }
 
+function axiosSearchMovie(query, callback) {
+	let url = `http://www.omdbapi.com/?t=${query}&y=&plot=short&apikey=${keys.ombd.secret}`;
+
+	return new Promise((resolve, reject) => {
+		axios
+			.get(url)
+			.then((response) => resolve(showMovieInfo(response)))
+			.catch(errorFn);
+	});
+}
+
+function showMovieInfo(response) {
+	let info = `${separator}Title: ${response.data.Title}\nYear: ${response.data.Year}\nIMDB Rating: ${response.data.imdbRating}\nCountry: ${response.data.Country}\nLanguage: ${response.data.Language}\nPlot: ${response.data.Plot}\nActors: ${response.data.Actors}${separator}`;
+	return info;
+}
 function errorFn(err) {
 	console.log("error");
 }
