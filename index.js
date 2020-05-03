@@ -63,16 +63,12 @@ async function txtCommands() {
 
 		if (command.includes("spotify")) {
 			promises.push(spotifySearch(query));
-			// output += showSong(res);
 		} else if (command.includes("concert")) {
 			promises.push(axiosGetEvents(query));
-			// output += showEvents(res);
 		} else if (command.includes("movie")) {
 			promises.push(axiosSearchMovie(query));
-			// output += showMovieInfo(res);
 		}
 	});
-	console.log(promises.length);
 	Promise.all(promises).then((values) => {
 		console.log(values);
 		values.forEach((e) => {
