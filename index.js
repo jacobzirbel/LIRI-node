@@ -1,6 +1,7 @@
 require("dotenv").config();
 const keys = require("./keys.js");
 const fs = require("fs");
+const inquirer = require("inquirer");
 const axios = require("axios");
 const moment = require("moment");
 const Spotify = require("node-spotify-api");
@@ -10,12 +11,48 @@ const spotify = new Spotify({
 });
 const separator = "------------";
 
+inquirer
+	.prompt([
+		{
+			name: "task",
+			message: "What would you like to do?",
+			type: "list",
+			choices: [
+				{ name: "concert-this", value: 1 },
+				{ name: "spotify-this", value: 2 },
+				{ name: "movie-this", value: 3 },
+				{ name: "commands from text file", value: 4 },
+			],
+		},
+		{
+			name: "query",
+			message: "About what would you like those details?",
+			when: (answers) => answers.task !== 4,
+		},
+	])
+	.then((response) => {
+		if (response.task === 4) {
+			// txt file commands
+		} else {
+			switch (response.task) {
+				case 1:
+					axiosGetEvents(response.query);
+					break;
+				case 2:
+					spotifySearch(response.query);
+					break;
+				case 3:
+					axiosSearchMovie(response.query);
+					break;
+			}
+		}
+	});
+
 function axiosGetEvents(artist) {
 	let url = `https://rest.bandsintown.com/artists/${artist}/events?app_id=${keys.bandsInTown.secret}`;
-	console.log(url);
 	axios.get(url).then(eventCallback).catch(errorFn);
 	function eventCallback(response) {
-		(response) => response.data.forEach((e) => showEvent(e));
+		response.data.forEach((e) => showEvent(e));
 	}
 }
 
@@ -49,7 +86,7 @@ function axiosSearchMovie(query) {
 		);
 	}
 }
-axiosSearchMovie("mr nobody");
+
 function errorFn(err) {
 	console.log("error");
 }
