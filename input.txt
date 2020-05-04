@@ -1,0 +1,7 @@
+# Please write one command per line
+# Lines with hash mark are ignored
+# Example: spotify-this SONG NAME HERE
+
+# Options: spotify-this, movie-this, concert-this followed by search query
+
+OUTPUT LOCATION: output.txt
