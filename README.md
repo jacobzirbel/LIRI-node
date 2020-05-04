@@ -4,7 +4,7 @@ Language Interpretation and Recognition Interface
 ## Purpose
 Search a variety of APIs to get information about songs, movies, and upcoming concerts. 
 
-[demo gif](https://github.com/jacobzirbel/LIRI-node/blob/master/demo.gif)
+[Demo GIF on imgur](https://imgur.com/a/HLVpLAH)
 
 ##### Instructions to use:
 1. Clone repo
