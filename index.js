@@ -10,48 +10,59 @@ const spotify = new Spotify({
 	secret: keys.spotify.secret,
 });
 const separator = "\n------------\n";
-
-inquirer
-	.prompt([
-		{
-			name: "task",
-			message: "What would you like to do?",
-			type: "list",
-			choices: [
-				{ name: "concert-this", value: 1 },
-				{ name: "spotify-this", value: 2 },
-				{ name: "movie-this", value: 3 },
-				{ name: "commands from text file", value: 4 },
-			],
-		},
-		{
-			name: "query",
-			message: "About what would you like those details?",
-			when: (answers) => answers.task !== 4,
-		},
-	])
-	.then(async (response) => {
-		if (response.task === 4) {
-			txtCommands();
-		} else {
-			let res;
-			switch (response.task) {
-				case 1:
-					res = await axiosGetEvents(response.query);
-					console.log(res);
-					break;
-				case 2:
-					res = await spotifySearch(response.query);
-					console.log(res);
-					break;
-				case 3:
-					res = await axiosSearchMovie(response.query);
-					console.log(res);
-					break;
+ask();
+function ask() {
+	inquirer
+		.prompt([
+			{
+				name: "task",
+				message: "What would you like to do?",
+				type: "list",
+				choices: [
+					{ name: "concert-this", value: 0 },
+					{ name: "spotify-this", value: 1 },
+					{ name: "movie-this", value: 2 },
+					{ name: "commands from text file", value: 3 },
+					{ name: "quit", value: 4 },
+				],
+			},
+			{
+				name: "query",
+				message: "About what would you like those details?",
+				when: (answers) => answers.task < 3,
+			},
+		])
+		.then(async (response) => {
+			if (response.task === 3) {
+				txtCommands();
+			} else {
+				let task = ["concert-this", "spotify-this", "movie-this"][
+					response.task
+				];
+				addCommandToLog(task + " " + response.query);
+				let res;
+				switch (response.task) {
+					case 0:
+						res = await axiosGetEvents(response.query);
+						console.log(res || highlight("Nothing to show!"));
+						ask();
+						break;
+					case 1:
+						res = await spotifySearch(response.query);
+						console.log(res || highlight("Nothing to show!"));
+						ask();
+						break;
+					case 2:
+						res = await axiosSearchMovie(response.query);
+						console.log(res || highlight("Nothing to show!"));
+						ask();
+						break;
+					case 4:
+						break;
+				}
 			}
-		}
-	});
-
+		});
+}
 async function txtCommands() {
 	let input = extractInput();
 	let outputData = "";
@@ -70,20 +81,25 @@ async function txtCommands() {
 		}
 	});
 	Promise.all(promises).then((values) => {
-		console.log(values);
-		values.forEach((e) => {
-			console.log(e);
-			outputData += e;
+		values.forEach((e, i) => {
+			command = input.commands[i];
+			addCommandToLog(command);
+			outputData += "\n" + command + e;
 		});
+		if (input.nonsense) {
+			outputData += `\n\n ${separator}I did not understand the following commands: ${input.nonsense.join(
+				"\n"
+			)}`;
+		}
 		writeOutput(outputData, input.outputFile);
 	});
 }
 function writeOutput(outputData, outputFile) {
-	fs.writeFileSync(outputFile, outputData);
+	fs.writeFileSync(`./output/${outputFile}`, outputData);
+	console.log(highlight("Success!"));
 }
 function extractInput() {
 	let input = fs.readFileSync("input.txt", "utf8");
-	let outputRE = new RegExp(/\w*OUTPUT\sLOCATION*\w:(.*)\.txt/i);
 	let output = "output.txt";
 	let commands = [];
 	let nonsense = [];
@@ -96,7 +112,12 @@ function extractInput() {
 			) {
 				commands.push(line);
 			} else if (line.includes("OUTPUT")) {
-				output = line.match(outputRE)[1].trim() + ".txt";
+				output =
+					line
+						.slice(line.indexOf(":") + 1)
+						.replace(".txt", "")
+						.trim() + ".txt";
+				console.log(line, line.indexOf(":") + 1);
 			} else {
 				nonsense.push(line);
 			}
@@ -123,9 +144,11 @@ function showEvents(response) {
 }
 
 function showEvent(event) {
-	let info = `${separator}Venue: ${event.venue.name}\nLocation: ${
-		event.venue.location
-	}\nDate of Event: ${moment(event.datetime)}${separator}`;
+	let info = highlight(
+		`Venue: ${event.venue.name}\nLocation: ${
+			event.venue.location
+		}\nDate of Event: ${moment(event.datetime).format("MM/DD/YYYY")}`
+	);
 	return info;
 }
 
@@ -163,5 +186,19 @@ function showMovieInfo(response) {
 	return info;
 }
 function errorFn(err) {
-	console.log("error");
+	console.log(highlight("Nothing to show!"));
+}
+
+function addCommandToLog(command) {
+	fs.appendFile(
+		"log.txt",
+		`${moment(new Date()).format("DD/MM/YYYY hh:mm:ss")}: ${command}\n`,
+		(err) => {
+			if (err) console.log("error");
+		}
+	);
+}
+
+function highlight(string) {
+	return separator + string + separator;
 }
