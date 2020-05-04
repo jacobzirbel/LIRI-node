@@ -28,14 +28,20 @@ function ask() {
 			},
 			{
 				name: "query",
-				message: "About what would you like those details?",
+				message: "About what?",
 				when: (answers) => answers.task < 3,
 			},
 		])
 		.then(async (response) => {
 			if (response.task === 3) {
 				txtCommands();
+			} else if (response.task === 4) {
+				return;
 			} else {
+				if (!response.query) {
+					console.log(highlight("You need to search something!"));
+					return ask();
+				}
 				let task = ["concert-this", "spotify-this", "movie-this"][
 					response.task
 				];
@@ -92,11 +98,12 @@ async function txtCommands() {
 			)}`;
 		}
 		writeOutput(outputData, input.outputFile);
+		ask();
 	});
 }
 function writeOutput(outputData, outputFile) {
-	fs.writeFileSync(`./output/${outputFile}`, outputData);
-	console.log(highlight("Success!"));
+	fs.writeFileSync(`${outputFile}`, outputData);
+	console.log(highlight("Check Output Folder!"));
 }
 function extractInput() {
 	let input = fs.readFileSync("input.txt", "utf8");
@@ -117,7 +124,6 @@ function extractInput() {
 						.slice(line.indexOf(":") + 1)
 						.replace(".txt", "")
 						.trim() + ".txt";
-				console.log(line, line.indexOf(":") + 1);
 			} else {
 				nonsense.push(line);
 			}
@@ -155,7 +161,7 @@ function showEvent(event) {
 async function spotifySearch(query, callback) {
 	return new Promise((resolve, reject) => {
 		spotify.search({ type: "track", query: query, limit: 2 }, (err, data) => {
-			if (err) reject(err);
+			if (err) errorFn();
 			resolve(showSong(data.tracks.items[0]));
 		});
 	});
