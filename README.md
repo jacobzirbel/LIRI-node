@@ -4,7 +4,7 @@ Language Interpretation and Recognition Interface
 ## Purpose
 Search a variety of APIs to get information about songs, movies, and upcoming concerts. 
 
-[Demo GIF on imgur](https://imgur.com/a/HLVpLAH)
+[Demo GIF on imgur](https://i.imgur.com/7MIbSZl.mp4)
 
 ##### Instructions to use:
 1. Clone repo
